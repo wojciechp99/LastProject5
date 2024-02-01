@@ -1,11 +1,13 @@
 package com.example.lastproject5
 
+import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.util.Log
 import android.widget.RemoteViews
 
@@ -14,7 +16,8 @@ private var currentIndex = 0
  * Implementation of App Widget functionality.
  */
 class SearchAndImage : AppWidgetProvider() {
-    val swapAction = "com.example.LastProject5.SWAP"
+    private val swapAction = "com.example.LastProject5.SWAP"
+    private val searchAction = "com.example.LastProject5.SEARCH"
 
     private val imageResources = intArrayOf(
         R.drawable.kot1,
@@ -42,6 +45,7 @@ class SearchAndImage : AppWidgetProvider() {
         // Enter relevant functionality for when the last widget is disabled
     }
 
+    @SuppressLint("QueryPermissionsNeeded")
     override fun onReceive(context: Context?, intent: Intent?) {
         super.onReceive(context, intent)
 
@@ -50,6 +54,20 @@ class SearchAndImage : AppWidgetProvider() {
         if (intent?.action == swapAction) {
             updateImageView(context!!)
             currentIndex += 1
+        } else if (intent?.action == searchAction) {
+            Log.e("SEARCHACTION", "SEARCH")
+
+            // opens url that we want
+            val urlToOpen = "https://www.google.com"
+            val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(urlToOpen))
+            browserIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+
+            // check if there is app to open browser
+            if (browserIntent.resolveActivity(context?.packageManager!!) != null) {
+                context.startActivity(browserIntent)
+            } else {
+                Log.e("SearchAndImage", "Brak aplikacji obsługującej przeglądarkę.")
+            }
         }
 
     }
@@ -76,13 +94,21 @@ internal fun updateAppWidget(
     appWidgetId: Int
 ) {
     val views = RemoteViews(context.packageName, R.layout.search_and_image)
-    views.setOnClickPendingIntent(R.id.swapImage, getPendingSelfIntent(context))
+    views.setOnClickPendingIntent(R.id.swapImage, getPendingSelfIntentSwap(context))
+    views.setOnClickPendingIntent(R.id.searchButton, getPendingSelfIntentSearch(context))
     appWidgetManager.updateAppWidget(appWidgetId, views)
 }
 
-private fun getPendingSelfIntent(context: Context): PendingIntent {
+private fun getPendingSelfIntentSwap(context: Context): PendingIntent {
     val intent = Intent(context, SearchAndImage::class.java)
     intent.action = "com.example.LastProject5.SWAP"
+
+    return PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_IMMUTABLE)
+}
+
+private fun getPendingSelfIntentSearch(context: Context): PendingIntent {
+    val intent = Intent(context, SearchAndImage::class.java)
+    intent.action = "com.example.LastProject5.SEARCH"
 
     return PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_IMMUTABLE)
 }
